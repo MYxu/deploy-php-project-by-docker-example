@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+
+  nginx:
+    image: nginx:1.18.0
+    ports:
+    - "180:80"
+    - "1443:443"
+    container_name: "nginx-component"
+    volumes:
+    - ./apps/:/usr/share/nginx/html/:rw
+    - ./runtime-environment/nginx/config/nginx.conf:/etc/nginx/nginx.conf:ro
+    - ./runtime-environment/nginx/config/conf.d/:/etc/nginx/conf.d/:ro
+    - ./runtime-environment/nginx/log/:/var/log/nginx/:rw
+    restart: always
+    privileged: true
+    networks:
+      - lnmp—network
+
+  php:
+    image: armin-php:7.4.13-fpm
+    build:
+      context: .
+      dockerfile: ./runtime-environment/php/build/7.4.13-fpm/Dockerfile
+    container_name: "php-component"
+    volumes:
+    - ./apps/:/usr/share/nginx/html/:rw
+    - ./runtime-environment/php/config/php.ini:/usr/local/etc/php/php.ini:ro
+    - ./runtime-environment/php/config/php-fpm.conf:/usr/local/etc/php-fpm.d/www.conf:ro
+    - ./runtime-environment/php/log:/var/log/php/:rw
+    privileged: true
+    restart: always
+    networks:
+      - lnmp—network
+
+  mysql:
+    image: mysql:5.7.32
+    container_name: "mysql-component"
+    ports:
+    - 13306:3306
+    volumes:
+    - ./runtime-environment/mysql/config/my.cnf:/etc/my.cnf:ro
+    - ./runtime-environment/mysql/data/:/var/lib/mysql/:rw
+    - ./runtime-environment/mysql/log/:/var/log/mysql/:rw
+    restart: always
+    privileged: true
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    networks:
+      - lnmp—network
+
+
+  redis:
+    image: redis:6.0.9
+    container_name: "redis-component"
+    ports:
+      - 16379:6379
+    volumes:
+    - ./runtime-environment/redis/config/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    - ./runtime-environment/redis/data/:/data:rw
+    restart: always
+    privileged: true
+    networks:
+      - lnmp—network
+
+
+networks:
+  lnmp—network:
+    driver: bridge
